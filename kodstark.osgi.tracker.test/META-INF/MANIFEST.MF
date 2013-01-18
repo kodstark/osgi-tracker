@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: kodstark.osgi.tracker.test
+Bundle-SymbolicName: kodstark.osgi.tracker.test
+Bundle-Version: 0.0.1.qualifier
+Bundle-Vendor: Kamil Demecki <kodstark@gmail.com>
+Fragment-Host: kodstark.osgi.tracker
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Require-Bundle: org.junit4;bundle-version="4.0.0",
+ org.mockito.mockito-all;bundle-version="1.9.0"
