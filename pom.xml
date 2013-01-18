@@ -11,10 +11,11 @@
         <tycho.version>0.16.0</tycho.version>
         <mockito.version>1.9.5</mockito.version>
         <jacoco.version>0.5.6.201201232323</jacoco.version>
+        <antrun.version>1.7</antrun.version>
+        <antcontrib.version>20020829</antcontrib.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <test.useUIHarness>false</test.useUIHarness>
         <test.useUIThread>false</test.useUIThread>
-        <jacoco.filter>+kodstark.osgi.tracker.*, -*.testsuite.TestSuite*</jacoco.filter>
     </properties>
     <repositories>
         <repository>
@@ -119,78 +120,138 @@
             <!-- create local p2 site for artifacts which don't have public available site but exists in maven central repository. 
                  Normally they should exist on corporate p2 site. -->
             <id>make-local-p2</id>
-	        <build>
-		        <plugins>
-			        <plugin>
-				        <groupId>org.eclipse.tycho.extras</groupId>
-				        <artifactId>tycho-p2-extras-plugin</artifactId>
-				        <version>${tycho.version}</version>
-				        <executions>
-					        <execution>
-						        <phase>prepare-package</phase>
-						        <goals>
-							        <goal>publish-features-and-bundles</goal>
-						        </goals>
-					        </execution>
-				        </executions>
-				        <configuration>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.eclipse.tycho.extras</groupId>
+                        <artifactId>tycho-p2-extras-plugin</artifactId>
+                        <version>${tycho.version}</version>
+                        <executions>
+                            <execution>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>publish-features-and-bundles</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
                                 <sourceLocation>${project.basedir}/repository/m2-mockito</sourceLocation>
                                 <artifactRepositoryLocation>${project.basedir}/repository/p2-mockito</artifactRepositoryLocation>
                                 <metadataRepositoryLocation>${project.basedir}/repository/p2-mockito</metadataRepositoryLocation>
-						        <compress>false</compress>
-				        </configuration>
-			        </plugin>
-			        <plugin>
-				        <artifactId>maven-dependency-plugin</artifactId>
-				        <executions>
-					        <execution>
-						        <id>copy-bundles-for-publishing</id>
-						        <phase>process-resources</phase>
-						        <goals>
-							        <goal>copy</goal>
-						        </goals>
-						        <configuration>
-							        <artifactItems>
-								        <artifactItem>
+                                <compress>false</compress>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-bundles-for-publishing</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
                                             <groupId>org.mockito</groupId>
                                             <artifactId>mockito-all</artifactId>
                                             <version>${mockito.version}</version>
-								        </artifactItem>
-							        </artifactItems>
-							        <outputDirectory>${project.basedir}/repository/m2-mockito/plugins</outputDirectory>
-						        </configuration>
-					        </execution>
-				        </executions>
-			        </plugin>
-		        </plugins>
-	        </build>
+                                        </artifactItem>
+                                    </artifactItems>
+                                    <outputDirectory>${project.basedir}/repository/m2-mockito/plugins</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>    
-		<profile>
-			<id>coverage</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.jacoco</groupId>
-						<artifactId>jacoco-maven-plugin</artifactId>
-						<version>${jacoco.version}</version>
-						<executions>
-							<execution>
-								<id>jacoco-initialize</id>
-								<goals>
-									<goal>prepare-agent</goal>
-								</goals>
-							</execution>
-							<execution>
-								<id>jacoco-site</id>
-								<phase>install</phase>
-								<goals>
-									<goal>report</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
+        <profile>
+            <id>coverage</id>
+            <build>           
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.version}</version>
+                        <executions>
+                            <execution>
+                                <id>jacoco-initialize</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>                        
+                    <plugin>
+                       <groupId>org.apache.maven.plugins</groupId>
+                       <artifactId>maven-antrun-plugin</artifactId>
+                       <version>${antrun.version}</version>
+                       <dependencies>
+                          <dependency>
+                             <groupId>org.jacoco</groupId>
+                             <artifactId>org.jacoco.ant</artifactId>
+                             <version>${jacoco.version}</version>
+                          </dependency>
+                          <dependency>
+                             <groupId>ant-contrib</groupId>
+                             <artifactId>ant-contrib</artifactId>
+                             <version>${antcontrib.version}</version>
+                          </dependency>
+                       </dependencies>
+                       <executions>
+                          <execution>
+                             <id>jacoco-report</id>
+                             <phase>install</phase>
+                             <goals>
+                                <goal>run</goal>
+                             </goals>
+                             <configuration>
+                                <target>
+                                    <property name="source-location" location="../"/>
+                                    <taskdef name="jacoco-report" classname="org.jacoco.ant.ReportTask" classpathref="maven.plugin.classpath" />
+                                    <taskdef classpathref="maven.runtime.classpath" resource="net/sf/antcontrib/antcontrib.properties" />
+                                    <available file="${project.basedir}/target/jacoco.exec" property="jacoco.exec.file.exists" />
+                                    <echo message="${project.basedir}/target/jacoco.exec" />
+                                    <if>
+                                      <equals arg1="${jacoco.exec.file.exists}" arg2="true" />
+                                      <then>
+                                         <echo message="Executing jacoco report" />
+                                         <echo message="Sources at ${source-location}"/>
+                                         <trycatch>
+                                             <try>
+                                                <jacoco-report>
+                                                   <executiondata>
+                                                       <file file="${project.basedir}/target/jacoco.exec" />
+                                                   </executiondata>
+                                                   <structure name="tracker">
+                                                       <classfiles>
+                                                          <fileset dir="${source-location}/kodstark.osgi.tracker/target/classes" />
+                                                       </classfiles>
+                                                       <sourcefiles encoding="UTF-8">
+                                                          <fileset dir="${source-location}/kodstark.osgi.tracker/src/main/java" />
+                                                       </sourcefiles>
+                                                   </structure>
+                                                   <html destdir="${project.basedir}/target/jacoco/report" />
+                                                   <xml destfile="${project.basedir}/target/jacoco/report/jacoco.xml"/>
+                                                </jacoco-report>
+                                             </try>
+                                             <catch>
+                                                 <echo>skipping</echo>
+                                             </catch>
+                                         </trycatch>
+                                      </then>
+                                      <else>
+                                         <echo message="No jacoco.exec file found." />
+                                      </else>
+                                   </if>
+                               </target>
+                             </configuration>
+                           </execution>
+                        </executions>
+                    </plugin>        
+                </plugins>
+            </build>
+        </profile>       
     </profiles>
 </project>
